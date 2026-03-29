@@ -309,13 +309,13 @@
     <div class="header-sub">UNIVERSAL STALLION RE 非公式Wiki</div>
   </div>
   <div class="header-right">
-    <button id="api-key-btn" onclick="toggleApiKey()">🔑 APIキー設定</button>
+    <button id="api-key-btn" onclick="toggleApiKey()">🔑 Gemini APIキー設定</button>
   </div>
 </header>
 
 <div id="api-key-area">
   <label>Anthropic APIキー：</label>
-  <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off">
+  <input type="password" id="api-key-input" placeholder="AIza..." autocomplete="off">
   <button id="api-key-save" onclick="saveApiKey()">保存</button>
 </div>
 
@@ -1140,7 +1140,7 @@ Uソウル:100ソウル
 - 簡潔でわかりやすい日本語で答えてください`;
 
 // ========== 状態管理 ==========
-let apiKey = localStorage.getItem('unistare_api_key') || '';
+let apiKey = localStorage.getItem('unistare_gemini_key') || '';
 let messages = [];
 let isLoading = false;
 
@@ -1163,9 +1163,9 @@ function saveApiKey() {
   const val = document.getElementById('api-key-input').value.trim();
   if (!val) return;
   apiKey = val;
-  localStorage.setItem('unistare_api_key', val);
+  localStorage.setItem('unistare_gemini_key', val);
   const btn = document.getElementById('api-key-btn');
-  btn.textContent = '🔑 APIキー設定済';
+  btn.textContent = '🔑 Gemini APIキー設定済';
   btn.classList.add('set');
   document.getElementById('api-key-area').classList.remove('open');
 }
@@ -1268,21 +1268,24 @@ async function sendMessage() {
   addTyping();
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: SYSTEM_PROMPT,
-        messages: messages
-      })
-    });
+    // Gemini APIフォーマットに変換
+    const geminiMessages = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: geminiMessages,
+          generationConfig: { maxOutputTokens: 1024 }
+        })
+      }
+    );
 
     const data = await res.json();
     removeTyping();
@@ -1292,7 +1295,7 @@ async function sendMessage() {
       addError(`エラー: ${errMsg}`);
       messages.pop();
     } else {
-      const reply = data.content[0].text;
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '回答を取得できませんでした。';
       addMessage('assistant', reply);
       messages.push({ role: 'assistant', content: reply });
     }
