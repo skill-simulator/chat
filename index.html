@@ -1045,7 +1045,7 @@ Uソウル:100ソウル
 - 簡潔でわかりやすい日本語で答えてください`;
 
 // ========== 状態管理 ==========
-const API_KEY = 'AIzaSyD79ZhRTCp_SgsgXbruHiSOOYAb9Y71fEU'; // ← ここにGemini APIキーを貼り付けてください
+const API_KEY = 'AIzaxxxxxxxxxxxxxxxx'; // ← ここにGemini APIキーを貼り付けてください
 let messages = [];
 let isLoading = false;
 
@@ -1155,7 +1155,7 @@ async function sendMessage() {
     }));
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
