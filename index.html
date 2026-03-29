@@ -32,91 +32,6 @@
     }
 
     /* ヘッダー */
-    header {
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-    .header-icon {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, var(--gold), var(--accent));
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2em;
-      flex-shrink: 0;
-    }
-    .header-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.3em;
-      letter-spacing: 0.1em;
-      color: var(--gold);
-    }
-    .header-sub {
-      font-size: 0.7em;
-      color: var(--text-dim);
-      letter-spacing: 0.05em;
-    }
-    .header-right {
-      margin-left: auto;
-    }
-    #api-key-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 0.75em;
-      cursor: pointer;
-      font-family: 'Noto Sans JP', sans-serif;
-      transition: all 0.15s;
-    }
-    #api-key-btn:hover { border-color: var(--gold); color: var(--gold); }
-    #api-key-btn.set { border-color: #4a9; color: #4a9; }
-
-    /* APIキー入力エリア */
-    #api-key-area {
-      background: var(--bg3);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
-      display: none;
-      gap: 10px;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    #api-key-area.open { display: flex; }
-    #api-key-area label { font-size: 0.8em; color: var(--text-dim); white-space: nowrap; }
-    #api-key-input {
-      flex: 1;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 7px 12px;
-      border-radius: 4px;
-      font-size: 0.85em;
-      font-family: monospace;
-    }
-    #api-key-input:focus { outline: none; border-color: var(--gold); }
-    #api-key-save {
-      background: var(--gold);
-      color: #1a1814;
-      border: none;
-      padding: 7px 16px;
-      border-radius: 4px;
-      font-size: 0.82em;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: 'Noto Sans JP', sans-serif;
-      transition: opacity 0.15s;
-    }
-    #api-key-save:hover { opacity: 0.85; }
-
     /* チャットエリア */
     #chat-area {
       flex: 1;
@@ -308,17 +223,7 @@
     <div class="header-title">ユニスタRE Wiki アシスタント</div>
     <div class="header-sub">UNIVERSAL STALLION RE 非公式Wiki</div>
   </div>
-  <div class="header-right">
-    <button id="api-key-btn" onclick="toggleApiKey()">🔑 Gemini APIキー設定</button>
-  </div>
 </header>
-
-<div id="api-key-area">
-  <label>Anthropic APIキー：</label>
-  <input type="password" id="api-key-input" placeholder="AIza..." autocomplete="off">
-  <button id="api-key-save" onclick="saveApiKey()">保存</button>
-</div>
-
 <div id="chat-area">
   <div class="welcome" id="welcome">
     <div class="welcome-icon">🏆</div>
@@ -1140,35 +1045,12 @@ Uソウル:100ソウル
 - 簡潔でわかりやすい日本語で答えてください`;
 
 // ========== 状態管理 ==========
-let apiKey = localStorage.getItem('unistare_gemini_key') || '';
+const API_KEY = 'AIzaSyBPtOZleuEyROM7A9WzKVT4NBRM_atMQNg'; // ← ここにGemini APIキーを貼り付けてください
 let messages = [];
 let isLoading = false;
 
-// 初期化
-window.onload = () => {
-  if (apiKey) {
-    document.getElementById('api-key-btn').textContent = '🔑 APIキー設定済';
-    document.getElementById('api-key-btn').classList.add('set');
-    document.getElementById('api-key-input').value = apiKey;
-  }
-};
-
 // ========== UI操作 ==========
-function toggleApiKey() {
-  const area = document.getElementById('api-key-area');
-  area.classList.toggle('open');
-}
 
-function saveApiKey() {
-  const val = document.getElementById('api-key-input').value.trim();
-  if (!val) return;
-  apiKey = val;
-  localStorage.setItem('unistare_gemini_key', val);
-  const btn = document.getElementById('api-key-btn');
-  btn.textContent = '🔑 Gemini APIキー設定済';
-  btn.classList.add('set');
-  document.getElementById('api-key-area').classList.remove('open');
-}
 
 function autoResize(el) {
   el.style.height = 'auto';
@@ -1251,10 +1133,8 @@ async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
-  if (!apiKey) {
-    toggleApiKey();
-    document.getElementById('api-key-input').focus();
-    addError('APIキーを設定してください。右上の「🔑 APIキー設定」から入力できます。');
+  if (!API_KEY || API_KEY === 'AIzaxxxxxxxxxxxxxxxx') {
+    addError('APIキーが設定されていません。chatbot.htmlのAPI_KEY変数にGemini APIキーを入力してください。');
     return;
   }
 
@@ -1275,7 +1155,7 @@ async function sendMessage() {
     }));
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
