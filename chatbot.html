@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ユニスタRE Wiki チャットボット</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #c8922a;
+      --gold-light: #e8c06a;
+      --gold-dim: #b28c39;
+      --bg: #1a1814;
+      --bg2: #231f1a;
+      --bg3: #2e2820;
+      --border: #3a3228;
+      --text: #e8e0d0;
+      --text-dim: #9a8e7a;
+      --accent: #e88c00;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ヘッダー */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--gold), var(--accent));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      flex-shrink: 0;
+    }
+    .header-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.3em;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+    }
+    .header-sub {
+      font-size: 0.7em;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+    .header-right {
+      margin-left: auto;
+    }
+    #api-key-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.75em;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: all 0.15s;
+    }
+    #api-key-btn:hover { border-color: var(--gold); color: var(--gold); }
+    #api-key-btn.set { border-color: #4a9; color: #4a9; }
+
+    /* APIキー入力エリア */
+    #api-key-area {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: none;
+      gap: 10px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    #api-key-area.open { display: flex; }
+    #api-key-area label { font-size: 0.8em; color: var(--text-dim); white-space: nowrap; }
+    #api-key-input {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-family: monospace;
+    }
+    #api-key-input:focus { outline: none; border-color: var(--gold); }
+    #api-key-save {
+      background: var(--gold);
+      color: #1a1814;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 4px;
+      font-size: 0.82em;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: opacity 0.15s;
+    }
+    #api-key-save:hover { opacity: 0.85; }
+
+    /* チャットエリア */
+    #chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+    #chat-area::-webkit-scrollbar { width: 4px; }
+    #chat-area::-webkit-scrollbar-track { background: transparent; }
+    #chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ウェルカムメッセージ */
+    .welcome {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-dim);
+    }
+    .welcome-icon {
+      font-size: 2.5em;
+      margin-bottom: 16px;
+    }
+    .welcome h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4em;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .welcome p { font-size: 0.85em; line-height: 1.7; }
+    .welcome-examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .example-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 0.78em;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: all 0.15s;
+    }
+    .example-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--bg2); }
+
+    /* メッセージ */
+    .msg {
+      display: flex;
+      gap: 10px;
+      max-width: 800px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .msg.user { flex-direction: row-reverse; margin-left: auto; }
+    .msg.assistant { margin-right: auto; }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9em;
+      flex-shrink: 0;
+    }
+    .msg.user .msg-avatar { background: var(--gold); color: #1a1814; }
+    .msg.assistant .msg-avatar { background: var(--bg3); border: 1px solid var(--border); }
+
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.88em;
+      line-height: 1.75;
+      max-width: calc(100% - 44px);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.user .msg-bubble {
+      background: var(--gold);
+      color: #1a1814;
+      font-weight: 500;
+      border-radius: 8px 2px 8px 8px;
+    }
+    .msg.assistant .msg-bubble {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 2px 8px 8px 8px;
+    }
+
+    /* ローディング */
+    .typing {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 14px;
+    }
+    .typing span {
+      width: 6px;
+      height: 6px;
+      background: var(--gold-dim);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* 入力エリア */
+    #input-area {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+    #user-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.88em;
+      font-family: 'Noto Sans JP', sans-serif;
+      resize: none;
+      min-height: 42px;
+      max-height: 120px;
+      line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+    #user-input:focus { outline: none; border-color: var(--gold); }
+    #user-input::placeholder { color: var(--text-dim); }
+    #send-btn {
+      background: var(--gold);
+      color: #1a1814;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      font-size: 1.1em;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #send-btn:hover { opacity: 0.85; }
+    #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* エラー */
+    .error-msg {
+      background: #3a1a1a;
+      border: 1px solid #7a3030;
+      color: #e08080;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.82em;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 10px 14px; }
+      #chat-area { padding: 14px; }
+      #input-area { padding: 10px 14px; }
+      .msg { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🏇</div>
+  <div>
+    <div class="header-title">ユニスタRE Wiki アシスタント</div>
+    <div class="header-sub">UNIVERSAL STALLION RE 非公式Wiki</div>
+  </div>
+  <div class="header-right">
+    <button id="api-key-btn" onclick="toggleApiKey()">🔑 APIキー設定</button>
+  </div>
+</header>
+
+<div id="api-key-area">
+  <label>Anthropic APIキー：</label>
+  <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off">
+  <button id="api-key-save" onclick="saveApiKey()">保存</button>
+</div>
+
+<div id="chat-area">
+  <div class="welcome" id="welcome">
+    <div class="welcome-icon">🏆</div>
+    <h2>ユニスタRE Wiki アシスタント</h2>
+    <p>レース結果・スキル考察・攻略情報など<br>Wikiに関する質問にお答えします。</p>
+    <div class="welcome-examples">
+      <button class="example-btn" onclick="sendExample(this)">トウソウサンデーのスキルは？</button>
+      <button class="example-btn" onclick="sendExample(this)">逃げ馬が有利なレースはある？</button>
+      <button class="example-btn" onclick="sendExample(this)">ダート最近の勝ち馬は？</button>
+      <button class="example-btn" onclick="sendExample(this)">序盤の進め方を教えて</button>
+      <button class="example-btn" onclick="sendExample(this)">最新ガチャ情報は？</button>
+    </div>
+  </div>
+</div>
+
+<div id="input-area">
+  <textarea id="user-input" placeholder="質問を入力してください..." rows="1"
+    onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+  <button id="send-btn" onclick="sendMessage()">➤</button>
+</div>
+
+<script>
+// ========== システムプロンプト ==========
+// ※ここにWikiの情報を追記してください
+const SYSTEM_PROMPT = `あなたはUNIVERSAL STALLION RE（ユニスタRE）の非公式Wikiのアシスタントです。
+ユーザーからの質問に対して、Wikiの情報をもとに日本語で丁寧に回答してください。
+
+【基本情報】
+- ユニスタREは競馬ゲームです
+- このWikiは有志により作成された非公式Wikiです
+- Wiki URL: https://w.atwiki.jp/unistare/
+
+【脚質について】
+- 逃げ：先頭を走るスタイル。先頭確保スキルが有効
+- 先行：先団につける。好位確保・好位追走スキルが有効
+- 差し：中団から末脚を伸ばす。差し系スキルが有効
+- 追い込み：後方から一気に追い込む。追い込み準備スキルが有効
+
+【スキルタグの見方】
+- （ジョッキー）付き：ジョッキースキル（青色タグ）
+- 通常スキル：オレンジ色タグ
+- フェーズ系（序盤・中盤・終盤・最終直線等）：グレータグ
+- ?：不明なスキル
+
+【レアリティ】
+LR < R < HN < HR < UR の順で高レアリティ
+
+【レース結果データ】
+以下に記録されたレース結果を参考に回答してください。
+
+--- レース結果ここから ---
+
+【R限定戦 芝1600m タイム1:33】
+1着 ラストオブアス（2人気）差し 道中11-6 スキル：王者の歩みLv1、上がり速度UPLv4、最終直線持続、ラストスパートLv2（ジョッキー）
+2着 ダーティーハリー（10人気）先行 道中5-4 スキル：好位確保Lv3（ジョッキー）、世界を制した日本代表（最終直線速度＋持続）
+3着 シセファム（11人気）差し 道中9-7 スキル：先手必勝Lv4、中盤、逆襲Lv1、渾身の末脚Lv3
+4着 ゲキシタブレ（6人気）先行 道中4-3 スキル：好位追走Lv3（ジョッキー）、追い上げLv3、上がり速度UPLv4
+5着 サンミス（12人気）追い込み 道中15-13 スキル：最終直線持続
+
+【HR限定戦 ダート2000m タイム1:54】
+1着 トウソウサンデー（10人気）逃げ 道中1-1 スキル：異次元の逃げLv3、先頭確保Lv3（ジョッキー）、怪鳥Lv1、渾身の末脚Lv3、希望の光Lv1
+2着 ムカデ（8人気）追い込み 道中16-16 スキル：最終直線速度
+3着 サマーナイトデイ（8人気）先行 道中4-2 スキル：好位確保Lv2（ジョッキー）、追い上げLv3、抜け出し【名馬】Lv1、最終直線持続
+4着 ゼダ（7人気） AK◎ 差し 道中10-6 スキル：中盤、王者の歩みLv1、最終直線速度
+5着 オッパイモミモミ（9人気）先行 道中2-3 スキル：ペースアップLv3、才能と努力の結実Lv1、最終直線速度【名馬】Lv1、ラストスパートLv2（ジョッキー）
+
+【HN限定戦 芝2400m タイム2:25】
+1着 プロノソーイ（11人気）先行 道中2-1 スキル：好位確保Lv3（ジョッキー）、体力転化Lv3
+2着 ライストローム（2人気） AK◎VC◎ 先行 道中5-2 スキル：上がり速度UPLv4
+3着 ゴリアス（6人気）差し 道中10-4 スキル：渾身の末脚Lv3
+4着 ミドリムシ（5人気）先行 道中3-3 スキル：先手必勝Lv3、?、ラストスパートLv2（ジョッキー）
+5着 シッパイサク（3人気）追い込み 道中14-9 スキル：追い込み準備Lv3（ジョッキー）、最終直線持続
+
+【UR&HR限定戦 芝3000m タイム2:50】
+1着 レースリーブロン（10人気）先行 道中6-1 スキル：序盤、王者の歩みLv1、怪鳥Lv1（最終直線持続）、渾身の末脚Lv3
+2着 ジャングルポケット（3人気）追い込み 道中14-? スキル：情報なし
+3着 レスリーミーロング（14人気）先行 道中2-2 スキル：好位確保Lv3（ジョッキー）、メジロの系譜Lv1（先手必勝）、王者の歩みLv1、華麗なお嬢さんLv1（最終直線速度）
+4着 ジャングルポケット（1人気） AK◎ 差し 道中10-? スキル：上がり速度UPLv2
+5着 ランニングマシン（15人気）先行 道中4-3 スキル：最終直線速度Lv4、最終直線持続
+
+【LR&UR限定戦 芝1600m タイム1:24】
+1着 エバーコンテンツ（16人気）差し 道中9-11 スキル：中盤
+2着 ヴァーニングヘルズ（5人気）逃げ 道中1-1 スキル：ワンダーホースLv3（追い上げ）、抜け出しLv3、最終直線持続Lv3、渾身の末脚Lv3
+3着 サマーナイトバギー（9人気）差し 道中12-7 スキル：最終直線速度
+4着 ナイトオブタマネギ（2人気）逃げ 道中2-2 スキル：先頭確保Lv3（ジョッキー）、クラシックの追い上げLv?、?、上がり速度UPLv4、希望の光Lv1（最終直線持続）、最終直線速度Lv4
+5着 ミルトスタング（14人気）差し 道中8-12 スキル：序盤
+
+【HN限定戦 ダート1600m タイム1:37】
+1着 ダーリアン（7人気）先行 道中3-2 スキル：最終直線持続【固有】Lv1
+2着 ダーティマイル（10人気）先行 道中2-1 スキル：好位確保Lv1（ジョッキー）、最終直線速度Lv4
+3着 ダッフィー（8人気） モンズ◎ 差し 道中7-4 スキル：追い上げLv3
+4着 サイキョウクラウド（5人気）差し 道中9-6 スキル：渾身の末脚Lv3
+5着 オシオシ（3人気）追い込み 道中14-11 スキル：先駆けLv3、追い込み準備Lv1（ジョッキー）
+
+【HR限定戦 芝2000m タイム1:53】
+1着 ゼレンホワ（13人気）先行 道中4-2 スキル：好位確保Lv3（ジョッキー）、渾身の末脚Lv3、怪鳥Lv1（最終直線持続）
+2着 カリバーン（15人気）追い込み 道中15-11 スキル：終盤、最終直線速度
+3着 スピドウカ（16人気） モンズ◎ 先行 道中6-6 スキル：スタート巧者Lv3、序盤、王者の歩みLv1、最終直線速度
+4着 ソトコンダイシャ（3人気）逃げ 道中1-3 スキル：先頭確保Lv3（ジョッキー）、大胆不敵Lv4、抜け出しLv3、逆襲Lv1、渾身の末脚Lv3
+5着 アルティミシア（1人気）差し 道中7-4 スキル：スタート巧者Lv3、最終直線持続
+
+【R限定戦 芝2400m タイム2:22】
+1着 ダーティホワ（16人気）先行 道中2-1 スキル：好位確保Lv3（ジョッキー）
+2着 グランド（10人気）先行 道中4-2 スキル：ワンダーホースLv1（追い上げ）
+3着 オラクセニア（13人気）追い込み 道中14-4 スキル：中盤
+4着 スズカサマーナイト（15人気）追い込み 道中15-10 スキル：情報なし
+5着 キリンサンライズ（14人気）差し 道中9-9 スキル：直線一気Lv3、最終直線持続Lv3、ラストスパートLv2（ジョッキー）
+
+【UR&HR限定戦 芝1400m タイム1:16】
+1着 ミルトスタング（6人気）差し 道中?-6 スキル：最終直線速度、最終直線持続
+2着 モウチョイ（4人気） AK◎ 先行 道中?-3 スキル：世界を制した日本代表（最終直線速度＋持続）、勝利の咆哮Lv1（直線一気）、日本の総大将Lv1（ラストスパート）
+3着 リィズフルハート（10人気）追い込み 道中?-14 スキル：最終直線持続
+4着 スプリームサンド（16人気）追い込み 道中?-10 スキル：最終直線速度、最終直線持続
+5着 エイコセイスイ（13人気）逃げ 道中2-4 スキル：スタート巧者Lv3、先頭確保Lv1（ジョッキー）、喰らいつく執念Lv2、渾身の末脚Lv3
+
+【HR限定戦 ダート1800m タイム1:43】
+1着 トウソウサンデー（13人気）逃げ 道中1-2 スキル：異次元の逃げLv3、先頭確保Lv3（ジョッキー）、渾身の末脚Lv3、怪鳥Lv1（最終直線持続）、希望の光Lv1（最終直線持続）
+2着 パンドラ（14人気）逃げ 道中2-1 スキル：追い上げLv3、上がり速度UPLv4、渾身の末脚Lv3
+3着 ヘンイマックス（8人気） AK◎ 先行 道中6-8 スキル：序盤、追い上げLv3、最終直線速度、日本の総大将Lv1（ラストスパート）
+4着 サマーナイトメッツ（1人気）追い込み 道中12-9 スキル：最終直線持続
+5着 レベラリア（16人気）追い込み 道中15-15 スキル：最終直線持続
+
+【LR&UR限定戦 芝2200m タイム2:01】
+1着 ヴァーニングハート（3人気）逃げ 道中5-2 スキル：序盤、中盤、追い上げLv3、抜け出しLv3、勝利の咆哮Lv1（直線一気）、渾身の末脚Lv3、?
+2着 ニゲハイスペサンデ（1人気） GO◎モンズ◎ 逃げ 道中1-1 スキル：アルプスの天才少女Lv1、喰らいつく執念Lv2、先手必勝Lv4、ペースアップLv3、追い上げLv3、日本の総大将Lv1（ラストスパート）
+3着 タクキングエアー（7人気）差し 道中12-7 スキル：終盤、最終直線持続
+4着 ワンレーサーレン（14人気）差し 道中11-5 スキル：序盤、中盤、才能と努力の結実Lv1（上がり速度UP）、最終直線持続
+5着 イーシー（13人気）追い込み 道中16-14 スキル：最終直線速度
+
+【R限定戦 芝2500m タイム1:28】
+1着 サマーナイトフォー（14人気）逃げ 道中1-1 スキル：16ハロンのペースアップLv?、渾身の末脚Lv3
+2着 ダーティーアリー（6人気）先行 道中5-2 スキル：好位確保Lv3（ジョッキー）
+3着 ロベレース（9人気） AK◎ 先行 道中6-4 スキル：先手必勝Lv3
+4着 サンライズアース（11人気）先行 道中4-3 スキル：追い上げLv3、最終直線速度
+5着 グリングローブ（4人気）逃げ 道中2-5 スキル：先駆け【固有】Lv1、逃亡者Lv2、ラストスパートLv2（ジョッキー）
+
+【UR&HR限定戦 芝3200m タイム3:03】
+1着 レースリープロン（13人気）先行 道中2-1 スキル：序盤、体力転化Lv3、王者の歩みLv1、怪鳥Lv1（最終直線持続）、渾身の末脚Lv3
+2着 レスリーミーロング（14人気）差し 道中3-2 スキル：序盤、好位追走Lv3（ジョッキー）、王者の歩みLv1、華麗なお嬢さんLv1
+3着 ヒゲマシンガン（12人気）逃げ 道中1-3 スキル：先頭確保Lv3（ジョッキー）、先手必勝Lv3、喰らいつく執念Lv2、ペースアップLv3、上がり3ハロン、最終直線速度【名馬】Lv1
+4着 ジャングルポケット（NFT）（2人気）差し 道中11-7 スキル：中盤、勝利の咆哮Lv1（直線一気）
+5着 ロベルトライズ（9人気）追い込み 道中16-? スキル：情報なし
+
+【HN限定戦 ダート1800m タイム1:50】
+1着 サマーナイトアニス（10人気） AK◎ 先行 道中5-1 スキル：抜け出しLv3
+2着 ジェットスパーク（11人気）逃げ 道中1-2 スキル：先頭確保Lv2（ジョッキー）、渾身の末脚Lv3
+3着 ギャルダル（9人気）先行 道中4-3 スキル：王者の歩みLv1
+4着 ライトパンチャー（16人気）差し 道中10-9 スキル：ラストスパートLv2（ジョッキー）
+5着 ダート（5人気） VC◎ 追い込み 道中15-13 スキル：最終直線速度Lv4
+
+【LR&UR限定戦 芝2200m タイム2:01】
+1着 ヴァーニングハート（2人気） GO◎ 逃げ 道中2-1 スキル：先頭確保Lv3（ジョッキー）、王者の歩みLv1、ワンダーホースLv3（追い上げ）、追い上げLv3、抜け出しLv3、勝利の咆哮Lv1（直線一気）、渾身の末脚Lv3、?
+2着 テンムンク（1人気） VC◎モンズ◎ 差し 道中9-4 スキル：中盤、抜け出しLv3、最終直線速度、ラストスパートLv3
+3着 ゼルノリチャード（11人気）差し 道中10-8 スキル：中盤、最終直線持続
+4着 イーシー（9人気）追い込み 道中16-? スキル：終盤
+5着 リィズフルフレア（15人気）逃げ 道中4-5 スキル：先頭確保Lv3（ジョッキー）、対抗意識Lv4、上がり速度UPLv3
+
+【R限定戦 芝1200m タイム1:08】
+1着 スプリゼーレン（4人気）先行 道中2-1 スキル：華麗なお嬢さんLv1（最終直線速度）、怪鳥Lv1（最終直線持続）
+2着 ラストオブアス（6人気）追い込み 道中16-14 スキル：追込準備Lv3、王者の歩みLv1、上がり速度UPLv4、最終直線持続
+3着 クレーター（9人気）差し 道中8-3 スキル：序盤、上がり3ハロン、最終直線速度
+4着 ローズナイトレーザ（5人気）差し 道中9-11 スキル：最終直線速度、ラストスパートLv2（ジョッキー）
+5着 ロベキールアルメス（15人気）逃げ 道中1-4 スキル：最終直線速度
+
+【HR限定戦 芝1600m タイム1:30】
+1着 ライズブラウニー（9人気）先行 道中4-3 スキル：抜け出しLv3、最終直線速度、ラストスパートLv1
+2着 アトス（16人気）逃げ 道中3-5 スキル：先頭確保Lv3（ジョッキー）、ワンダーホースLv1（追い上げ）、抜け出しLv3、渾身の末脚Lv3
+3着 ロベニゲタイ（2人気）逃げ 道中2-2 スキル：異次元の逃げLv3、先頭確保Lv3（ジョッキー）、ワンダーホースLv1（追い上げ）、世界を制した日本代表Lv1（最終直線速度＋持続）、日本の総大将Lv1（ラストスパート）
+4着 トウソウサンデー（14人気）逃げ 道中1-1 スキル：異次元の逃げLv3、先頭確保Lv3（ジョッキー）、怪鳥Lv1（最終直線持続）、希望の光Lv1（最終直線持続）
+5着 ミスドミニク（11人気）差し 道中9-7 スキル：ワンダーホースLv1（追い上げ）
+
+【HN限定戦 ダート2000m タイム1:37】
+1着 サマーナイトアニス（12人気） AK◎ 逃げ 道中3-1 スキル：抜け出しLv3
+2着 ジェットスパーク（10人気）逃げ 道中1-2 スキル：先頭確保Lv3（ジョッキー）、渾身の末脚Lv3
+3着 アッチャー（6人気）逃げ 道中2-3 スキル：情報なし
+4着 サササ（13人気）差し 道中10-8 スキル：先手必勝Lv3、ラストスパートLv2（ジョッキー）
+5着 アクビ（4人気）差し 道中12-9 スキル：中盤、好位追走Lv3（ジョッキー）、最終直線持続
+
+【UR&HR限定戦 芝2400m タイム2:15】
+1着 リィズメアスピカ（8人気）追い込み 道中14-9 スキル：最終直線持続、最終直線速度
+2着 ニアパーフェクト（11人気）差し 道中7-1 スキル：中盤、王者の歩みLv1、怪鳥Lv1（最終直線持続）、最終直線速度【名馬】Lv1
+3着 モシヤタケシ（1人気） GO◎ 先行 道中5-4 スキル：中盤、好位追走Lv1（ジョッキー）、逆襲Lv3、最終直線持続
+4着 ネオバターサンド（7人気）差し 道中8-8 スキル：最終直線持続、ラストスパートLv2（ジョッキー）
+5着 レオンディアル（4人気）逃げ 道中1-3 スキル：先頭確保Lv3（ジョッキー）、クラシックの追い上げLv?、胡蝶蘭の夢Lv1（追い上げ）、最終直線持続Lv3、渾身の末脚Lv3
+
+【LR&UR限定戦 芝3000m タイム2:47】
+1着 ローズナイトシュガ（6人気）逃げ 道中2-1 スキル：先頭確保Lv3（ジョッキー）、先手必勝Lv4、王者の歩みLv1、ワンダーホースLv1（追い上げ）、渾身の末脚Lv3、世界の夜を照らす月Lv1（最終直線速度）
+2着 キタサンレジェンド（4人気） AK◎ 逃げ 道中1-2 スキル：先頭確保Lv3（ジョッキー）、先手必勝Lv4、ペースアップLv4、追い上げLv3、上がり速度UPLv4、渾身の末脚Lv3、最終直線持続Lv3
+3着 ペクノツーロン（12人気）先行 道中6-4 スキル：序盤、最終直線速度
+4着 レースリープロン（16人気）差し 道中13-6 スキル：序盤、最終直線速度
+5着 ペグチャ（2人気）差し 道中7-5 スキル：ペースアップLv4、上がり速度UPLv4、最終直線持続、ラストスパートLv3
+
+【HN限定戦 芝3000m タイム3:03】
+1着 ステバン（8人気）差し 道中6-3 スキル：先手必勝Lv3、?
+2着 チョウキョリエース（5人気）逃げ 道中1-1 スキル：先頭確保Lv3（ジョッキー）、追い上げLv3
+3着 アドマイヤフォルム（4人気）先行 道中3-2 スキル：好位確保Lv2（ジョッキー）、追い上げLv3
+4着 レフトフォルム（1人気） AK◎VC◎ 先行 道中2-4 スキル：ラストスパートLv2（ジョッキー）
+5着 ラスパガナイーーー（2人気） モンズ◎ 先行 道中4-5 スキル：ペースアップLv3、?、ラストスパートLv2（ジョッキー）
+
+--- レース結果ここまで ---
+
+回答の注意点：
+- 知らない情報については「Wikiに記載がない」と正直に伝えてください
+- 推測が含まれる場合はその旨を伝えてください
+- 簡潔でわかりやすい日本語で答えてください`;
+
+// ========== 状態管理 ==========
+let apiKey = localStorage.getItem('unistare_api_key') || '';
+let messages = [];
+let isLoading = false;
+
+// 初期化
+window.onload = () => {
+  if (apiKey) {
+    document.getElementById('api-key-btn').textContent = '🔑 APIキー設定済';
+    document.getElementById('api-key-btn').classList.add('set');
+    document.getElementById('api-key-input').value = apiKey;
+  }
+};
+
+// ========== UI操作 ==========
+function toggleApiKey() {
+  const area = document.getElementById('api-key-area');
+  area.classList.toggle('open');
+}
+
+function saveApiKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val) return;
+  apiKey = val;
+  localStorage.setItem('unistare_api_key', val);
+  const btn = document.getElementById('api-key-btn');
+  btn.textContent = '🔑 APIキー設定済';
+  btn.classList.add('set');
+  document.getElementById('api-key-area').classList.remove('open');
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function sendExample(btn) {
+  document.getElementById('user-input').value = btn.textContent;
+  sendMessage();
+}
+
+// ========== チャット ==========
+function addMessage(role, content) {
+  const area = document.getElementById('chat-area');
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = role === 'user' ? '👤' : '🐎';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = content;
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return bubble;
+}
+
+function addTyping() {
+  const area = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing-indicator';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = '🐎';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function addError(msg) {
+  const area = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = 'error-msg';
+  div.textContent = msg;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  if (!apiKey) {
+    toggleApiKey();
+    document.getElementById('api-key-input').focus();
+    addError('APIキーを設定してください。右上の「🔑 APIキー設定」から入力できます。');
+    return;
+  }
+
+  input.value = '';
+  input.style.height = 'auto';
+  addMessage('user', text);
+  messages.push({ role: 'user', content: text });
+
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+  addTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        messages: messages
+      })
+    });
+
+    const data = await res.json();
+    removeTyping();
+
+    if (!res.ok) {
+      const errMsg = data.error?.message || `APIエラー (${res.status})`;
+      addError(`エラー: ${errMsg}`);
+      messages.pop();
+    } else {
+      const reply = data.content[0].text;
+      addMessage('assistant', reply);
+      messages.push({ role: 'assistant', content: reply });
+    }
+  } catch (e) {
+    removeTyping();
+    addError(`通信エラー: ${e.message}`);
+    messages.pop();
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+</script>
+</body>
+</html>
