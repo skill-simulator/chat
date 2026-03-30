@@ -1045,7 +1045,7 @@ Uソウル:100ソウル
 - 簡潔でわかりやすい日本語で答えてください`;
 
 // ========== 状態管理 ==========
-const API_KEY = 'AIzaSyD79ZhRTCp_SgsgXbruHiSOOYAb9Y71fEU'; // ← ここにGemini APIキーを貼り付けてください
+const WORKER_URL = 'https://gentle-scene-db92.applecake0612.workers.dev';
 let messages = [];
 let isLoading = false;
 
@@ -1133,11 +1133,6 @@ async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
-  if (!API_KEY || API_KEY === 'AIzaxxxxxxxxxxxxxxxx') {
-    addError('APIキーが設定されていません。chatbot.htmlのAPI_KEY変数にGemini APIキーを入力してください。');
-    return;
-  }
-
   input.value = '';
   input.style.height = 'auto';
   addMessage('user', text);
@@ -1154,18 +1149,15 @@ async function sendMessage() {
       parts: [{ text: m.content }]
     }));
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: geminiMessages,
-          generationConfig: { maxOutputTokens: 1024 }
-        })
-      }
-    );
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: geminiMessages,
+        generationConfig: { maxOutputTokens: 4096 }
+      })
+    });
 
     const data = await res.json();
     removeTyping();
