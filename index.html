@@ -16112,7 +16112,7 @@ async function sendMessage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        system_instruction: { parts: [{ text: `今日の日付は${new Date().toLocaleDateString('ja-JP', {year:'numeric',month:'long',day:'numeric',weekday:'long'})}です。この日付を基準にガチャや期間限定イベントの開催中・終了を正確に判断してください。\n\n` + SYSTEM_PROMPT }] },
         contents: geminiMessages,
         generationConfig: { maxOutputTokens: 4096 }
       })
